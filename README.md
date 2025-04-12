@@ -18,7 +18,7 @@ Tecnologias utilizadas
 
 Desenvolvedores
 
--Leonardo Pires Ferreira
--Yuri Calmon
+- Leonardo Pires Ferreira
+- Yuri Calmon
 
 
