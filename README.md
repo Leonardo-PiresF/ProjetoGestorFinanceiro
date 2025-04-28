@@ -16,9 +16,9 @@ Tecnologias utilizadas
 - Back-end: Python, Flask
 - Banco de Dados: SQLite
 
-Desenvolvedores
+Desenvolvedor
 
 - Leonardo Pires Ferreira
-- Yuri Calmon
+
 
 
