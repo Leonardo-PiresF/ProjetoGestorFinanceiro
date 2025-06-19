@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Início{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Transações Recentes</h2>
+    <p>Bem-vindo ao seu gestor financeiro!</p>
+    <a href="{{ url_for('main.transacoes') }}" class="btn btn-primary mb-4">Adicionar Transação</a>
+
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Receitas</h5>
+                    <p class="card-text">R$ {{ "%.2f"|format(receitas_total) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Despesas</h5>
+                    <p class="card-text">R$ {{ "%.2f"|format(despesas_total) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-primary text-white mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Saldo</h5>
+                    <p class="card-text">R$ {{ "%.2f"|format(receitas_total - despesas_total) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Transações -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Descrição</th>
+                    <th>Valor (R$)</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transacao in transacoes %}
+                <tr>
+                    <td>{{ transacao.data.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ transacao.descricao }}</td>
+                    <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                        {{ "%.2f"|format(transacao.valor) }}
+                    </td>
+                    <td>{{ 'Receita' if transacao.tipo == 'receita' else 'Despesa' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}

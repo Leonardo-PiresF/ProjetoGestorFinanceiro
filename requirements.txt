@@ -1,0 +1,8 @@
+flask
+flask_sqlalchemy
+flask_bootstrap
+flask-login==0.6.2
+bcrypt==4.0.1
+flask-wtf
+email-validator
+python-dotenv

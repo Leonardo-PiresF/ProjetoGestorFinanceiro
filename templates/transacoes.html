@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Lista de Transações</h2>
+<!-- Adicionar dentro do bloco content -->
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Descrição</th>
+            <th>Valor (R$)</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in transacoes %}
+        <tr>
+            <td>{{ t.data.strftime('%d/%m/%Y') }}</td>
+            <td>{{ t.descricao }}</td>
+            <td class="{{ 'text-success' if t.tipo == 'receita' else 'text-danger' }}">
+                {{ "%.2f"|format(t.valor) }}
+            </td>
+            <td>{{ 'Receita' if t.tipo == 'receita' else 'Despesa' }}</td>
+            <td>
+                <a href="{{ url_for('main.editar_transacao', id=t.id) }}" class="btn btn-sm btn-warning">Editar</a>
+                <form action="{{ url_for('main.delete_transacao', id=t.id) }}" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger">Excluir</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
