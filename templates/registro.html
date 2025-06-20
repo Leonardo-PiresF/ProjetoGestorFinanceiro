@@ -14,9 +14,7 @@
                 <div class="card-body p-4">
                     <!-- Formulário de registro -->
                     <form method="POST" action="{{ url_for('main.registro') }}">
-                        {{ form.hidden_tag() }}
-
-                        <!-- Exibição de erros -->
+                        <!-- Exibição de mensagens flash -->
                         {% with messages = get_flashed_messages(with_categories=true) %}
                         {% if messages %}
                         {% for category, message in messages %}
@@ -96,5 +94,3 @@
     });
 </script>
 {% endblock %}
-
-{% block styles %}

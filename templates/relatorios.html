@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}Relatórios Financeiros{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho da página -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bar-chart-fill me-2"></i>Relatórios Financeiros</h2>
+
+        <!-- Filtro de período -->
+        <div class="dropdown">
+            <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-calendar-range me-1"></i>
+                {% if periodo == '7' %}Últimos 7 dias
+                {% elif periodo == '30' %}Últimos 30 dias
+                {% elif periodo == '90' %}Últimos 90 dias
+                {% elif periodo == '365' %}Último ano
+                {% endif %}
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('main.relatorios', periodo='7') }}">Últimos 7 dias</a>
+                </li>
+                <li><a class="dropdown-item" href="{{ url_for('main.relatorios', periodo='30') }}">Últimos 30 dias</a>
+                </li>
+                <li><a class="dropdown-item" href="{{ url_for('main.relatorios', periodo='90') }}">Últimos 90 dias</a>
+                </li>
+                <li><a class="dropdown-item" href="{{ url_for('main.relatorios', periodo='365') }}">Último ano</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Cards de resumo -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Receitas</h6>
+                            <h4 class="mb-0">R$ {{ "%.2f"|format(receitas_total) }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-arrow-up-circle fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Despesas</h6>
+                            <h4 class="mb-0">R$ {{ "%.2f"|format(despesas_total) }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-arrow-down-circle fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-{% if saldo >= 0 %}primary{% else %}warning{% endif %} text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Saldo</h6>
+                            <h4 class="mb-0">R$ {{ "%.2f"|format(saldo) }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i
+                                class="bi bi-{% if saldo >= 0 %}check-circle{% else %}exclamation-triangle{% endif %} fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Transações</h6>
+                            <h4 class="mb-0">{{ estatisticas.total_transacoes }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-list-ul fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <!-- Gráfico de Pizza - Receitas vs Despesas -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Receitas vs Despesas</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pizzaChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Linha - Evolução Temporal -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolução Temporal</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="linhaChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos de Categorias -->
+    <div class="row mb-4">
+        <!-- Receitas por Categoria -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-tags me-2"></i>Receitas por Categoria</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="receitasCatChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Despesas por Categoria -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-tags-fill me-2"></i>Despesas por Categoria</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="despesasCatChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas Detalhadas -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Estatísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Média de Receitas:</strong></p>
+                            <p class="text-success fs-5">R$ {{ "%.2f"|format(estatisticas.media_receitas) }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Média de Despesas:</strong></p>
+                            <p class="text-danger fs-5">R$ {{ "%.2f"|format(estatisticas.media_despesas) }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Maior Receita:</strong></p>
+                            <p class="text-success fs-5">R$ {{ "%.2f"|format(estatisticas.maior_receita) }}</p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-2"><strong>Maior Despesa:</strong></p>
+                            <p class="text-danger fs-5">R$ {{ "%.2f"|format(estatisticas.maior_despesa) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Últimas Transações -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Últimas Transações</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transacao in transacoes %}
+                                <tr>
+                                    <td>{{ transacao.data.strftime('%d/%m') }}</td>
+                                    <td>{{ transacao.descricao[:20] }}{% if transacao.descricao|length > 20 %}...{%
+                                        endif %}</td>
+                                    <td class="{{ 'text-success' if transacao.tipo == 'receita' else 'text-danger' }}">
+                                        R$ {{ "%.2f"|format(transacao.valor) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-end">
+                        <a href="{{ url_for('main.transacoes') }}" class="btn btn-sm btn-outline-primary">
+                            Ver todas <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5>Ações Rápidas</h5>
+                    <a href="{{ url_for('main.transacoes') }}" class="btn btn-primary me-2">
+                        <i class="bi bi-plus-circle me-1"></i>Nova Transação
+                    </a>
+                    <button class="btn btn-success me-2" onclick="exportarCSV()">
+                        <i class="bi bi-download me-1"></i>Exportar CSV
+                    </button>
+                    <button class="btn btn-info" onclick="imprimirRelatorio()">
+                        <i class="bi bi-printer me-1"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Dados dos gráficos vindos do backend
+    const pizzaData = {{ pizza_data| safe }};
+    const linhaData = {{ linha_data| safe }};
+    const catReceitasData = {{ cat_receitas_data| safe }};
+    const catDespesasData = {{ cat_despesas_data| safe }};
+
+    // Configuração do gráfico de pizza
+    const pizzaChart = new Chart(document.getElementById('pizzaChart'), {
+        type: 'doughnut',
+        data: {
+            labels: pizzaData.labels,
+            datasets: [{
+                data: pizzaData.values,
+                backgroundColor: pizzaData.colors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Configuração do gráfico de linha
+    const linhaChart = new Chart(document.getElementById('linhaChart'), {
+        type: 'line',
+        data: {
+            labels: linhaData.labels,
+            datasets: [{
+                label: 'Receitas',
+                data: linhaData.receitas,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Despesas',
+                data: linhaData.despesas,
+                borderColor: '#dc3545',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Gráfico de receitas por categoria
+    if (catReceitasData.labels.length > 0) {
+        const receitasCatChart = new Chart(document.getElementById('receitasCatChart'), {
+            type: 'bar',
+            data: {
+                labels: catReceitasData.labels,
+                datasets: [{
+                    label: 'Receitas',
+                    data: catReceitasData.values,
+                    backgroundColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: '#28a745',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico de despesas por categoria
+    if (catDespesasData.labels.length > 0) {
+        const despesasCatChart = new Chart(document.getElementById('despesasCatChart'), {
+            type: 'bar',
+            data: {
+                labels: catDespesasData.labels,
+                datasets: [{
+                    label: 'Despesas',
+                    data: catDespesasData.values,
+                    backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                    borderColor: '#dc3545',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Função para exportar CSV
+    function exportarCSV() {
+        window.location.href = '{{ url_for("main.exportar_csv", periodo=periodo) }}';
+    }
+
+    // Função para imprimir
+    function imprimirRelatorio() {
+        window.print();
+    }
+</script>
+
+<!-- CSS para impressão -->
+<style>
+    @media print {
+
+        .sidebar,
+        .navbar,
+        .btn,
+        .dropdown {
+            display: none !important;
+        }
+
+        .main-content {
+            margin-left: 0 !important;
+        }
+
+        .card {
+            border: 1px solid #000 !important;
+        }
+    }
+</style>
+{% endblock %}
