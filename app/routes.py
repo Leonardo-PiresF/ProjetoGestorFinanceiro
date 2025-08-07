@@ -47,12 +47,8 @@ def index():
 @main.route('/transacoes', methods=['GET', 'POST'])
 @login_required
 def transacoes():
-    form = TransacaoForm()
-    
-    # Buscar transações do usuário atual
+    form = TransacaoForm()    
     query = Transacao.query.filter_by(usuario_id=current_user.id)
-    
-    # Filtro por tipo se especificado
     if request.args.get('tipo'):
         query = query.filter_by(tipo=request.args['tipo'])
     
@@ -60,7 +56,7 @@ def transacoes():
 
     if form.validate_on_submit():
         try:
-            # Buscar ou criar categoria
+            
             categoria = None
             if form.categoria.data:  
                 categoria = Categoria.query.filter_by(
@@ -68,7 +64,6 @@ def transacoes():
                     tipo=form.tipo.data,
                     usuario_id=current_user.id
                 ).first()
-                
                 if not categoria:
                     categoria = Categoria(
                         nome=form.categoria.data.strip(),
@@ -76,9 +71,8 @@ def transacoes():
                         usuario_id=current_user.id
                     )
                     db.session.add(categoria)
-                    db.session.flush()  # Para obter o ID
+                    db.session.flush()  
 
-            # Criar nova transação
             nova_transacao = Transacao(
                 descricao=form.descricao.data.strip(),
                 valor=float(form.valor.data),
@@ -97,7 +91,7 @@ def transacoes():
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao adicionar transação: {str(e)}', 'danger')
-            print(f"Erro detalhado: {e}")  # Para debug
+            print(f"Erro detalhado: {e}")  
 
     return render_template('add_transacao.html', form=form, transacoes=transacoes)
 
@@ -224,20 +218,17 @@ def relatorios():
         Transacao.usuario_id == current_user.id,
         Transacao.data >= data_inicio
     ).all()
-    
-    
+      
     receitas_total = sum(t.valor for t in transacoes if t.tipo == 'receita')
     despesas_total = sum(t.valor for t in transacoes if t.tipo == 'despesa')
-    saldo = receitas_total - despesas_total
-    
+    saldo = receitas_total - despesas_total  
     
     pizza_data = {
         'labels': ['Receitas', 'Despesas'],
         'values': [float(receitas_total), float(despesas_total)],
         'colors': ['#28a745', '#dc3545']
     }
-    
-    
+
     evolucao_diaria = defaultdict(lambda: {'receitas': 0, 'despesas': 0})
     
     for transacao in transacoes:
@@ -246,16 +237,14 @@ def relatorios():
             evolucao_diaria[data_str]['receitas'] += float(transacao.valor)
         else:
             evolucao_diaria[data_str]['despesas'] += float(transacao.valor)
-    
-    
+        
     datas_ordenadas = sorted(evolucao_diaria.keys())
     linha_data = {
         'labels': [datetime.strptime(d, '%Y-%m-%d').strftime('%d/%m') for d in datas_ordenadas],
         'receitas': [evolucao_diaria[d]['receitas'] for d in datas_ordenadas],
         'despesas': [evolucao_diaria[d]['despesas'] for d in datas_ordenadas]
     }
-    
-   
+      
     categorias_receitas = defaultdict(float)
     categorias_despesas = defaultdict(float)
     
@@ -276,8 +265,7 @@ def relatorios():
         'labels': list(categorias_despesas.keys()),
         'values': list(categorias_despesas.values())
     }
-    
-    
+       
     estatisticas = {
         'total_transacoes': len(transacoes),
         'media_receitas': float(receitas_total / max(len([t for t in transacoes if t.tipo == 'receita']), 1)),
@@ -304,7 +292,7 @@ def relatorios():
 def exportar_csv():
     periodo = request.args.get('periodo', '30')
     
-    # Calcular data inicial
+    
     if periodo == '7':
         data_inicio = datetime.now().date() - timedelta(days=7)
     elif periodo == '30':
@@ -316,20 +304,20 @@ def exportar_csv():
     else:
         data_inicio = datetime.now().date() - timedelta(days=30)
     
-    # Buscar transações
+   
     transacoes = Transacao.query.filter(
         Transacao.usuario_id == current_user.id,
         Transacao.data >= data_inicio
     ).order_by(Transacao.data.desc()).all()
     
-    # Criar CSV
+    
     output = StringIO()
     writer = csv.writer(output)
     
-    # Cabeçalho
+    
     writer.writerow(['Data', 'Descrição', 'Valor', 'Tipo', 'Categoria'])
     
-    # Dados
+    
     for transacao in transacoes:
         writer.writerow([
             transacao.data.strftime('%d/%m/%Y'),
@@ -339,7 +327,6 @@ def exportar_csv():
             transacao.categoria.nome if transacao.categoria else 'Sem categoria'
         ])
     
-    # Preparar resposta
     response = make_response(output.getvalue())
     response.headers['Content-Disposition'] = f'attachment; filename=relatorio_financeiro_{periodo}dias.csv'
     response.headers['Content-type'] = 'text/csv'
